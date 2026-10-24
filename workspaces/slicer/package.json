@@ -1,0 +1,27 @@
+{
+  "name": "maquette-slicer-studio",
+  "version": "1.0.0",
+  "description": "Studio professionnel de tranchage et fabrication de maquettes d'architecture physiques",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "architecture",
+    "maquette",
+    "slicer",
+    "threejs",
+    "electron",
+    "laser-cutting",
+    "svg",
+    "dxf"
+  ],
+  "author": "Maquette Slicer Studio",
+  "license": "ISC",
+  "dependencies": {
+    "three": "^0.165.0"
+  },
+  "devDependencies": {
+    "electron": "^44.9.1"
+  }
+}

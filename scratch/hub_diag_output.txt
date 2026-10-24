@@ -1,0 +1,57 @@
+[START HUB FULL DIAGNOSTIC]
+[Diagnostic] Electron Hub ready...
+[Diagnostic] Loading http://localhost:3800 ...
+[HUB CONSOLE lvl=1]: [App] Loading sample texture: sample_concrete.jpg at (http://localhost:3800/workspaces/alchemist/js/app.js:641)
+[HUB CONSOLE lvl=3]: [App] Failed to load sample image: sample_concrete.jpg [object Event] at (http://localhost:3800/workspaces/alchemist/js/app.js:667)
+[Diagnostic] Hub URL loaded.
+[HUB CONSOLE lvl=2]: %cElectron Security Warning (Disabled webSecurity) font-weight: bold; This renderer process has "webSecurity" disabled. This
+  exposes users of this app to severe security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged. at (node:electron/js2c/renderer_init:2)
+[HUB CONSOLE lvl=2]: %cElectron Security Warning (allowRunningInsecureContent) font-weight: bold; This renderer process has "allowRunningInsecureContent"
+  enabled. This exposes users of this app to severe security risks.
+
+  
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged. at (node:electron/js2c/renderer_init:2)
+[HUB CONSOLE lvl=2]: %cElectron Security Warning (Insecure Content-Security-Policy) font-weight: bold; This renderer process has either no Content Security
+  Policy set or a policy with "unsafe-eval" enabled. This exposes users of
+  this app to unnecessary security risks.
+
+For more information and help, consult
+https://electronjs.org/docs/tutorial/security.
+This warning will not show up
+once the app is packaged. at (node:electron/js2c/renderer_init:2)
+[Diagnostic] Hub State: {
+  "hubTitle": "ArchiPoly — Architectural 3D Studio",
+  "activeTab": "01\n        \n          \n        \n        Material Library",
+  "frame0Accessible": true,
+  "frame0State": {
+    "readyState": "complete",
+    "hasThree": true,
+    "materialsCardsCount": 191,
+    "catalogTotalBadge": "191 MATS",
+    "categoryPills": 14,
+    "viewportLoaderDisplay": "none",
+    "hudDisplay": "block",
+    "hudName": "bricks_basalt_combined",
+    "hasArchforgeDesktop": true,
+    "parentHasArchforgeDesktop": true,
+    "canvasCount": 1
+  },
+  "frame0Error": null
+}
+[HUB CONSOLE lvl=1]: Bouton cliqué : [Material Library] Voir matériau 'bricks_basalt_combined' (Brick) at (http://localhost:3800/workspaces/material-library/index.html:1808)
+[Diagnostic] Material card click result: Clicked view on bricks_basalt_combined
+[Diagnostic] Frame 0 state after click: {
+  "activeMatHudDisplay": "block",
+  "hudName": "bricks_basalt_combined",
+  "viewportLoaderDisplay": "none",
+  "canvasCount": 1
+}
+[Diagnostic] Full Hub Test Complete.

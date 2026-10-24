@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scale Slicer Studio - Architecture & Fabrication</title>
+  <link rel="stylesheet" href="./src/css/app.css">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <link rel="icon" type="image/png" href="./icon.png">
+
+  <!-- JSZip for zipped PDF sheets export -->
+  <script src="/vendor/jszip/dist/jszip.min.js"></script>
+
+  <!-- Three.js ES Modules Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/vendor/three/build/three.module.js",
+      "three/addons/": "/vendor/three/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="app-container">
+    <!-- Studio Header -->
+    <header class="app-header">
+      <div class="brand-section">
+        <img src="./icon.svg" class="brand-icon" alt="Maquette Slicer Icon">
+        <div class="brand-title">
+          <h1>Scale Slicer Studio</h1>
+          <span>ARCHITECTURAL SLICING &amp; FABRICATION</span>
+        </div>
+      </div>
+
+      <!-- Main Viewport Mode Switcher -->
+      <div class="view-mode-tabs">
+        <button id="tab-mode-phys" class="tab-btn active accent-phys" title="View stepped extruded physical scale model">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+          </svg>
+          Physical 3D Model
+        </button>
+
+        <button id="tab-mode-orig" class="tab-btn accent-orig" title="View original 3D mesh and laser slicing planes">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          </svg>
+          Source 3D Model
+        </button>
+
+        <button id="tab-mode-2d" class="tab-btn accent-2d" title="View 2D vector laser cut sheets">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+          2D Cut Sheets
+        </button>
+      </div>
+
+      <!-- Header Actions & Exports -->
+      <div class="header-actions">
+        <button id="btn-export-svg" class="btn-secondary" title="Export SVG cutting vector path">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export SVG
+        </button>
+
+        <button id="btn-export-pdf-zip" class="btn-primary" title="Download all cut sheets as calibrated vector PDF in a ZIP folder">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          PDF Sheets (.ZIP)
+        </button>
+      </div>
+    </header>
+
+    <!-- Workspace -->
+    <div class="app-workspace">
+      <!-- Left Control Panel & Calculator -->
+      <aside class="sidebar-panel">
+        <div class="sidebar-content">
+
+          <!-- 1. Import 3D & Presets -->
+          <div class="studio-card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
+                  <path d="M12 12v9"></path>
+                  <path d="m8 17 4 4 4-4"></path>
+                </svg>
+                1. Source 3D Model
+              </span>
+              <span id="mesh-info-badge" class="control-badge">Terrain</span>
+            </div>
+
+            <!-- Drag & Drop Zone -->
+            <div id="dropzone" class="dropzone-box" title="Glissez-déposez un fichier STL, OBJ, GLTF/GLB ou FBX">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-amber)" stroke-width="1.8">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <div class="dropzone-text">Drag & drop your 3D file here</div>
+              <div class="dropzone-subtext">STL, OBJ, GLTF, GLB, FBX or <a href="#" id="link-browse" style="color:var(--accent-amber); text-decoration:underline;">browse</a></div>
+              <input type="file" id="file-input" accept=".stl,.obj,.gltf,.glb,.fbx" style="display:none;">
+            </div>
+
+            <!-- Built-in Architectural Presets -->
+            <div class="presets-group">
+              <span class="presets-label">Built-in Architectural Samples:</span>
+              <div class="preset-buttons">
+                <button id="preset-topo" class="preset-btn active" title="Terrain topography with hill and plateau">Terrain Hill</button>
+                <button id="preset-villa" class="preset-btn" title="Cantilevered modern villa with patio">Modern Villa</button>
+                <button id="preset-amphi" class="preset-btn" title="Urban amphitheater with steps and stage">Amphitheater</button>
+                <button id="preset-pavilion" class="preset-btn" title="Parametric pavilion with organic ribs">Sculptural Pavilion</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Architectural Physical Model Calculator -->
+          <div class="studio-card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                  <line x1="8" y1="21" x2="16" y2="21"></line>
+                  <line x1="12" y1="17" x2="12" y2="21"></line>
+                </svg>
+                2. Scale & Thickness Calculator
+              </span>
+            </div>
+
+            <!-- Source Unit -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Source 3D file unit:</span>
+                <span id="unit-label" class="control-badge">Meters (m)</span>
+              </div>
+              <div class="button-group-grid" style="grid-template-columns: repeat(3, 1fr);">
+                <button class="choice-btn active" data-unit="m">Meters</button>
+                <button class="choice-btn" data-unit="cm">Centimeters</button>
+                <button class="choice-btn" data-unit="mm">Millimeters</button>
+              </div>
+            </div>
+
+            <!-- Target Architectural Scale -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Target architectural scale:</span>
+                <span id="scale-badge" class="control-badge">1:200</span>
+              </div>
+              <div class="button-group-grid">
+                <button class="choice-btn" data-scale="50">1:50</button>
+                <button class="choice-btn" data-scale="100">1:100</button>
+                <button class="choice-btn active" data-scale="200">1:200</button>
+                <button class="choice-btn" data-scale="500">1:500</button>
+                <button class="choice-btn" data-scale="1000">1:1000</button>
+              </div>
+              <div class="custom-input-row">
+                <span class="input-suffix">1 :</span>
+                <input type="number" id="custom-scale-input" class="studio-input" value="200" min="1" max="10000" placeholder="Custom scale">
+              </div>
+            </div>
+
+            <!-- Material Sheet Thickness -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Material sheet thickness:</span>
+                <span id="thickness-badge" class="control-badge">1.5 mm</span>
+              </div>
+              <div class="button-group-grid">
+                <button class="choice-btn" data-thick="1.0">1 mm</button>
+                <button class="choice-btn active" data-thick="1.5">1.5 mm</button>
+                <button class="choice-btn" data-thick="2.0">2 mm</button>
+                <button class="choice-btn" data-thick="3.0">3 mm</button>
+                <button class="choice-btn" data-thick="5.0">5 mm</button>
+              </div>
+              <div class="custom-input-row">
+                <input type="number" id="custom-thick-input" class="studio-input" value="1.5" min="0.2" max="50" step="0.1" placeholder="Custom thick">
+                <span class="input-suffix">mm</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Real-Time Summary Card (Encadré Récapitulatif en Temps Réel) -->
+          <div class="summary-box">
+            <div class="summary-header">
+              <span class="summary-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                Model Summary
+              </span>
+              <span class="control-badge" id="summary-scale-tag">1:200</span>
+            </div>
+
+            <div class="summary-stats-grid">
+              <div class="summary-stat-row">
+                <span class="stat-label">Model dimensions:</span>
+                <span id="stat-dimensions" class="stat-value highlight-amber">30.0 × 22.5 × 8.0 cm</span>
+              </div>
+              <div class="summary-stat-row">
+                <span class="stat-label">Elevation per layer:</span>
+                <span id="stat-elevation-per-layer" class="stat-value highlight-cyan">0.30 m per layer</span>
+              </div>
+              <div class="summary-stat-row">
+                <span class="stat-label">Total cut layers:</span>
+                <span id="stat-total-layers" class="stat-value" style="font-size:14px; color:#fff;">53 layers</span>
+              </div>
+              <div class="summary-stat-row">
+                <span class="stat-label">3D Triangles:</span>
+                <span id="stat-triangles" class="stat-value">7 700</span>
+              </div>
+            </div>
+
+            <button id="btn-re-slice" class="btn-primary" style="margin-top:4px;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+              </svg>
+              Compute &amp; Slice
+            </button>
+          </div>
+
+          <!-- 4. 3D Physical Inspection & Material Ambiances -->
+          <div class="studio-card">
+            <div class="card-header">
+              <span class="card-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M2 12h20"></path>
+                  <path d="M20 12v8H4v-8"></path>
+                  <path d="M6 12V4h12v8"></path>
+                </svg>
+                3. Material &amp; 3D Stack
+              </span>
+            </div>
+
+            <!-- Material Ambiances -->
+            <div class="control-row">
+              <div class="control-label">
+                <span>Material finish:</span>
+              </div>
+              <div class="material-cards-grid">
+                <button class="material-card-btn active" data-mat="kraft" title="Grey chipboard / recycled kraft with dark edge">
+                  <div class="material-swatch swatch-kraft"></div>
+                  <span class="material-name">Grey Board</span>
+                </button>
+                <button class="material-card-btn" data-mat="balsa" title="Balsa wood or light birch plywood">
+                  <div class="material-swatch swatch-balsa"></div>
+                  <span class="material-name">Balsa Wood</span>
+                </button>
+                <button class="material-card-btn" data-mat="museum" title="Pure white matte museum board">
+                  <div class="material-swatch swatch-museum"></div>
+                  <span class="material-name">Museum Board</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Layer Inspection Slider -->
+            <div class="slider-container">
+              <div class="slider-header">
+                <span class="control-label">Layer inspection:</span>
+                <span id="layer-slider-val" class="slider-val">All layers (53/53)</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <input type="range" id="layer-slider" class="studio-slider" min="1" max="53" value="53">
+                <button id="btn-play-stack" class="icon-btn" style="width:28px; height:28px;" title="Animate layer-by-layer stack">
+                  <svg id="play-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Exploded View Slider -->
+            <div class="slider-container">
+              <div class="slider-header">
+                <span class="control-label">Exploded View (Gap):</span>
+                <span id="exploded-slider-val" class="slider-val">0 mm</span>
+              </div>
+              <input type="range" id="exploded-slider" class="studio-slider" min="0" max="25" step="0.5" value="0">
+            </div>
+
+            <!-- Isolate Toggle -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:4px;">
+              <span class="control-label">Isolate active layer:</span>
+              <input type="checkbox" id="isolate-toggle" style="cursor:pointer; accent-color:var(--accent-amber);">
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- Center Viewport Area -->
+      <main class="viewport-container">
+        <!-- 3D Three.js Canvas Container -->
+        <div id="three-canvas-container"></div>
+
+        <!-- 2D Cut Sheet Canvas Container -->
+        <div id="twod-sheet-container">
+          <!-- 2D Top Toolbar -->
+          <div class="twod-toolbar">
+            <div class="twod-settings-bar">
+              <span class="presets-label" style="margin-right:4px;">Sheet Format:</span>
+              <select id="sheet-format-select" class="studio-input" style="padding:4px 8px; width:auto;">
+                <option value="A4">A4 (297 × 210 mm)</option>
+                <option value="A3" selected>A3 (420 × 297 mm)</option>
+                <option value="A2">A2 (594 × 420 mm)</option>
+                <option value="A1">A1 (841 × 594 mm)</option>
+                <option value="A0">A0 (1189 × 841 mm)</option>
+                <option value="LASER_600x400">Laser 600 × 400 mm</option>
+                <option value="LASER_900x600">Laser 900 × 600 mm</option>
+                <option value="CUSTOM">Custom Format...</option>
+              </select>
+
+              <div style="display:flex; align-items:center; gap:8px; margin-left:12px; border-left:1px solid var(--border-main); padding-left:12px;">
+                <label style="display:flex; align-items:center; gap:4px; font-size:11px; color:#ef4444; cursor:pointer;">
+                  <input type="checkbox" id="toggle-layer-cut" checked style="accent-color:#ef4444;">
+                  Cut Paths (Red)
+                </label>
+                <label style="display:flex; align-items:center; gap:4px; font-size:11px; color:#3b82f6; cursor:pointer;">
+                  <input type="checkbox" id="toggle-layer-guides" checked style="accent-color:#3b82f6;">
+                  Glue Marks (Blue)
+                </label>
+                <label style="display:flex; align-items:center; gap:4px; font-size:11px; color:#10b981; cursor:pointer;">
+                  <input type="checkbox" id="toggle-layer-labels" checked style="accent-color:#10b981;">
+                  Layer Numbering (#)
+                </label>
+              </div>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div class="sheet-pagination-bar">
+              <button id="btn-prev-sheet" class="page-btn">&larr; Previous</button>
+              <span id="sheet-page-indicator" class="page-indicator">Sheet 1 / 1</span>
+              <button id="btn-next-sheet" class="page-btn">Next &rarr;</button>
+              <button id="btn-fit-sheet" class="page-btn" title="Fit sheet in view" style="margin-left:6px;">Fit View</button>
+              <button id="btn-export-sheet-pdf" class="page-btn" title="Download this calibrated vector PDF sheet" style="margin-left:8px; border-color:var(--accent-cyan); color:var(--accent-cyan);">
+                PDF Sheet
+              </button>
+            </div>
+          </div>
+
+          <!-- 2D Canvas -->
+          <canvas id="twod-canvas"></canvas>
+        </div>
+
+        <!-- 3D Camera Controls Overlay -->
+        <div class="viewport-overlay-controls" id="viewport-3d-controls">
+          <button id="btn-view-iso" class="icon-btn" title="Isometric View">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </button>
+          <button id="btn-view-top" class="icon-btn" title="Top View (Site Plan)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+          <button id="btn-view-front" class="icon-btn" title="Front View (Elevation)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="5" width="18" height="14" rx="2" ry="2"></rect>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+            </svg>
+          </button>
+          <button id="btn-view-focus" class="icon-btn" title="Focus camera on scale model">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Bottom-Left Status Pill -->
+        <div class="viewport-info-pill">
+          <div class="info-item">Scale: <span id="pill-scale">1:200</span></div>
+          <div class="info-item">Sheet: <span id="pill-thick">1.5 mm</span></div>
+          <div class="info-item">Layers: <span id="pill-layers">53</span></div>
+          <div class="info-item">Dimensions: <span id="pill-dims">30 × 22.5 × 8 cm</span></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast-notification">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      <span id="toast-message">Export SVG réalisé avec succès !</span>
+    </div>
+  </div>
+
+  <!-- Main Application Script (ES Module) -->
+  <script type="module" src="./src/js/app.js"></script>
+</body>
+</html>

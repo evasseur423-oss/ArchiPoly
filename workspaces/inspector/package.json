@@ -1,0 +1,24 @@
+{
+  "name": "3d-viewer-studio",
+  "version": "1.0.0",
+  "description": "3D Viewer Studio — visionneuse 3D universelle haute performance (Electron + Three.js)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "icon": "electron tools/make-icon.js"
+  },
+  "keywords": [
+    "3d",
+    "viewer",
+    "three.js",
+    "electron",
+    "gltf",
+    "fbx",
+    "obj"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^44.9.0",
+    "three": "^0.165.0"
+  }
+}

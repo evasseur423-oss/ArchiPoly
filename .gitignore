@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Production build and executables
+dist/
+build/*.exe
+build/*.zip
+
+# Temporary files and uploads
+temp_uploads/
+*.tmp
+*.log
+
+# Operating System & IDE artifacts
+.DS_Store
+Thumbs.db
+ehthumbs.db
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# User data & materials cache (external workspace materials)
+Workspace_Materials/
+test_link/

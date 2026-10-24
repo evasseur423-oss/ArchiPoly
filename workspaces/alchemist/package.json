@@ -1,0 +1,29 @@
+{
+  "name": "pbr-alchemist-studio",
+  "productName": "PBR Alchemist Studio",
+  "version": "1.0.0",
+  "description": "Transforme une photographie brute en un pack complet de textures PBR sans couture (Seamless) avec inspecteur 2D et viewport 3D temps réel.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "pbr",
+    "texture",
+    "seamless",
+    "threejs",
+    "normal-map",
+    "alchemist",
+    "gamedev",
+    "3d"
+  ],
+  "author": "PBR Alchemist Studio",
+  "license": "MIT",
+  "dependencies": {
+    "jszip": "^3.10.2",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "electron": "^44.9.1"
+  }
+}

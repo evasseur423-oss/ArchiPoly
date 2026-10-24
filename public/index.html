@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArchiPoly — Architectural 3D Studio</title>
+  <meta name="description" content="Unified, modular and open-source desktop suite for architectural 3D, PBR materials, physical model slicing, and engineering physics.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" type="image/png" href="icon.png">
+</head>
+<body>
+
+  <!-- ========================================================================= -->
+  <!-- MINIMALIST ARCHITECTURAL HEADER (BLENDER-STYLE WORKSPACE NAVIGATION)        -->
+  <!-- ========================================================================= -->
+  <header id="studio-header" class="studio-header">
+    
+    <!-- Branding -->
+    <div class="header-brand">
+      <div class="brand-badge-logo">
+        <img src="icon.png" alt="ArchiPoly Logo" width="28" height="28" class="brand-img">
+      </div>
+      <div class="brand-text-group">
+        <h1 class="brand-name">ARCHI<span class="accent-glow">POLY</span></h1>
+        <span class="brand-sub">ARCHITECTURAL 3D STUDIO</span>
+      </div>
+      <span class="version-tag">v1.0 OPEN-SOURCE</span>
+    </div>
+
+    <!-- Blender-style Workspaces Navigation -->
+    <nav class="workspace-nav" id="workspaceNav" aria-label="Workspaces">
+      
+      <button class="nav-tab active" data-workspace="0" id="tab-0" title="Shortcut: Alt+1">
+        <span class="tab-index">01</span>
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7l8-4 8 4-8 4-8-4zM4 12l8 4 8-4M4 17l8 4 8-4"/></svg>
+        </span>
+        <span class="tab-label">Material Library</span>
+        <span class="tab-indicator"></span>
+      </button>
+
+      <button class="nav-tab" data-workspace="1" id="tab-1" title="Shortcut: Alt+2">
+        <span class="tab-index">02</span>
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg>
+        </span>
+        <span class="tab-label">3D Inspector</span>
+        <span class="tab-indicator"></span>
+      </button>
+
+      <button class="nav-tab" data-workspace="2" id="tab-2" title="Shortcut: Alt+3">
+        <span class="tab-index">03</span>
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg>
+        </span>
+        <span class="tab-label">PBR Alchemist</span>
+        <span class="tab-indicator"></span>
+      </button>
+
+      <button class="nav-tab" data-workspace="3" id="tab-3" title="Shortcut: Alt+4">
+        <span class="tab-index">04</span>
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </span>
+        <span class="tab-label">Scale Slicer</span>
+        <span class="tab-indicator"></span>
+      </button>
+
+      <button class="nav-tab" data-workspace="4" id="tab-4" title="Shortcut: Alt+5">
+        <span class="tab-index">05</span>
+        <span class="tab-icon">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg>
+        </span>
+        <span class="tab-label">ArchPhysics</span>
+        <span class="tab-indicator"></span>
+      </button>
+
+    </nav>
+
+    <!-- Header Actions & GPU Status -->
+    <div class="header-actions">
+      
+      <!-- GPU Lifecycle Indicator -->
+      <div class="gpu-status-pill" id="gpuStatusPill" title="WebGL lifecycle management: only active workspace consumes GPU resources">
+        <span class="gpu-pulse"></span>
+        <span class="gpu-text" id="gpuStatusText">GPU : [01. Material Library] active</span>
+      </div>
+
+      <!-- External Materials Folder Button -->
+      <button class="header-action-btn primary-action" id="btnOpenMaterialsDir" title="Open external Workspace_Materials folder in File Explorer">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        </svg>
+        <span>Materials Folder</span>
+      </button>
+
+      <!-- About & Help Modal Button -->
+      <button class="header-action-btn" id="btnOpenAbout" title="About ArchiPoly, architecture & shortcuts">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+        </svg>
+      </button>
+
+      <!-- Window Controls Divider -->
+      <div class="window-controls-divider" aria-hidden="true"></div>
+
+      <!-- Minimalist Window Close Button -->
+      <button class="header-action-btn close-app-btn" id="btnCloseApp" title="Close application" aria-label="Close application">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+
+    </div>
+
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- CENTRAL VIEWPORT (ISOLATED WORKSPACE CONTAINERS)                            -->
+  <!-- ========================================================================= -->
+  <main id="stage-viewport" class="stage-viewport">
+    
+    <!-- Workspace 01: Material Library -->
+    <div class="workspace-container active" id="ws-container-0">
+      <iframe id="frame-0" src="/workspaces/material-library/index.html" class="workspace-frame" title="Material Library"></iframe>
+    </div>
+
+    <!-- Workspace 02: 3D Inspector -->
+    <div class="workspace-container" id="ws-container-1">
+      <iframe id="frame-1" src="/workspaces/inspector/index.html" class="workspace-frame" title="3D Inspector"></iframe>
+    </div>
+
+    <!-- Workspace 03: PBR Alchemist -->
+    <div class="workspace-container" id="ws-container-2">
+      <iframe id="frame-2" src="/workspaces/alchemist/index.html" class="workspace-frame" title="PBR Alchemist"></iframe>
+    </div>
+
+    <!-- Workspace 04: Scale Slicer -->
+    <div class="workspace-container" id="ws-container-3">
+      <iframe id="frame-3" src="/workspaces/slicer/index.html" class="workspace-frame" title="Scale Slicer"></iframe>
+    </div>
+
+    <!-- Workspace 05: ArchPhysics -->
+    <div class="workspace-container" id="ws-container-4">
+      <iframe id="frame-4" src="/workspaces/archphysics/index.html" class="workspace-frame" title="ArchPhysics"></iframe>
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- ABOUT / INFORMATION MODAL                                                 -->
+  <!-- ========================================================================= -->
+  <div class="modal-backdrop" id="aboutModal" hidden>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-brand">
+          <img src="icon.png" alt="Icon" width="36" height="36">
+          <div>
+            <h3>ArchiPoly</h3>
+            <span class="sub">Unified & Open-Source Architectural Software Suite</span>
+          </div>
+        </div>
+        <button class="modal-close" id="btnCloseAbout">&times;</button>
+      </div>
+
+      <div class="modal-content">
+        <div class="info-block">
+          <h4>🌟 5 Workspaces Architecture</h4>
+          <ul class="module-bullets">
+            <li><strong>[01. Material Library]</strong>: Categorized PBR catalog & viewer with automatic texture normalization (_baseColor, _normal, _roughness, etc.) and 4 architectural 3D preview meshes.</li>
+            <li><strong>[02. 3D Inspector]</strong>: High-performance universal 3D viewer (GLTF, OBJ, FBX, STL, DAE, PLY) with checkerboard UV inspection, 2D UV unwrapping view, layer manager, and comprehensive mesh metrics.</li>
+            <li><strong>[03. PBR Alchemist]</strong>: Seamless photo-to-PBR generator (high-pass delighter + Sobel normal filters) mathematically deriving 5 PBR texture maps with real-time 3D preview.</li>
+            <li><strong>[04. Scale Slicer]</strong>: Geometric plane-mesh slicing for laser cutting and physical architectural scale model fabrication (1:50 to 1:1000 scales, SVG & DXF vector exports).</li>
+            <li><strong>[05. ArchPhysics]</strong>: Thermal engineering lab (ISO 6946 / ISO 13790 with 3D Heatmap) and structural mechanics / mechanics of materials (Euler-Bernoulli with exportable calculation reports).</li>
+          </ul>
+        </div>
+
+        <div class="info-block">
+          <h4>⚡ Optimizations & Inter-Module Bridges</h4>
+          <p>
+            • <strong>Strict GPU Lifecycle</strong>: Inactive workspaces automatically suspend their WebGL requestAnimationFrame loop to 0% GPU load on tab switch.<br>
+            • <strong>Alchemist ➔ Library Bridge</strong>: Direct saving of generated PBR texture sets into external physical storage.<br>
+            • <strong>3D Inspector ➔ Slicer / ArchPhysics Bridge</strong>: Instant geometry transfer across workspaces without re-importing from disk.
+          </p>
+        </div>
+
+        <div class="info-block">
+          <h4>⌨️ Studio Hub Keyboard Shortcuts</h4>
+          <div class="shortcuts-grid">
+            <span class="kbd-key">Alt + 1</span><span>Material Library</span>
+            <span class="kbd-key">Alt + 2</span><span>3D Inspector</span>
+            <span class="kbd-key">Alt + 3</span><span>PBR Alchemist</span>
+            <span class="kbd-key">Alt + 4</span><span>Scale Slicer</span>
+            <span class="kbd-key">Alt + 5</span><span>ArchPhysics</span>
+          </div>
+        </div>
+
+        <div class="info-footer-credits">
+          <span>Open Source License <strong>GNU GPLv3</strong></span> • <span>Three.js <strong>v0.165.0</strong></span> • <span>Electron & Express</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications Host -->
+  <div class="hub-toast-host" id="hubToastHost" aria-live="polite"></div>
+
+  <script src="hub.js"></script>
+</body>
+</html>

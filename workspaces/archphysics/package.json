@@ -1,0 +1,20 @@
+{
+  "name": "archphysics-studio",
+  "productName": "ArchPhysics Studio",
+  "version": "1.0.0",
+  "description": "Laboratoire d'ingénierie architecturale : bilan thermique (ISO 6946 / ISO 13790) et RDM (Euler-Bernoulli / Eurocodes) sur maquette 3D.",
+  "main": "main.js",
+  "author": "ArchPhysics Studio",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "make-icon": "electron tools/make-icon.js"
+  },
+  "dependencies": {
+    "three": "0.165.0",
+    "web-ifc": "^0.0.78"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0"
+  }
+}

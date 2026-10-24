@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="ArchPhysics Studio — laboratoire d'ingénierie architecturale : bilan thermique (ISO 6946 / ISO 13790) et calcul RDM des poutres (Euler-Bernoulli, Eurocodes) sur maquette 3D.">
+  <title>ArchPhysics Studio — Architectural Engineering Lab</title>
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="css/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "/vendor/three/build/three.module.js",
+      "three/addons/": "/vendor/three/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body data-mode="thermal">
+<div id="app">
+
+  <!-- ============================ BARRE SUPÉRIEURE ============================ -->
+  <header id="topbar">
+    <div class="brand">
+      <img src="icon.svg" alt="" class="brand-logo" width="30" height="30">
+      <div class="brand-text">
+        <h1>ArchPhysics <span>Studio</span></h1>
+        <small>Architectural Engineering Lab</small>
+      </div>
+    </div>
+
+    <nav class="mode-switch" id="mode-switch" aria-label="Module de calcul">
+      <button id="mode-thermal" class="mode-btn active" data-mode="thermal" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Thermal</span><kbd>1</kbd>
+      </button>
+      <button id="mode-structure" class="mode-btn" data-mode="structure" type="button">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 6h18M5 6v13M19 6v13M5 10c4 6 10 6 14 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Structure / FEM</span><kbd>2</kbd>
+      </button>
+    </nav>
+
+    <div class="top-actions">
+      <button id="btn-materials" class="btn ghost" type="button" title="Material Engineering Database">
+        <svg viewBox="0 0 24 24" width="15" height="15"><path d="M4 7l8-4 8 4-8 4-8-4zM4 12l8 4 8-4M4 17l8 4 8-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        Materials
+      </button>
+      <div class="menu-wrap">
+        <button id="btn-export" class="btn primary" type="button" aria-haspopup="true" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="15" height="15"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          Export Calculation Report
+        </button>
+        <div id="export-menu" class="menu" hidden>
+          <button id="export-preview" type="button"><b>Preview &amp; Print</b><small>Opens calculation report, printable to PDF</small></button>
+          <button id="export-pdf" type="button"><b>Save as PDF</b><small>A4 PDF Document</small></button>
+          <button id="export-html" type="button"><b>Save as HTML</b><small>Standalone document</small></button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================ PANNEAU GAUCHE ============================ -->
+  <aside id="sidebar-left" aria-label="Modèle 3D">
+    <section class="card">
+      <div class="card-title"><span class="dot blue"></span>3D Model</div>
+      <div class="btn-col">
+        <button id="btn-test-model" class="btn accent" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 11l9-7 9 7v9H3zM9 20v-6h6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          Generate Demo Model
+        </button>
+        <button id="btn-import" class="btn" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 15v5h16v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Import File…
+        </button>
+        <input id="file-input" type="file" multiple accept=".glb,.gltf,.obj,.mtl,.fbx,.stl,.ifc,.bin,.png,.jpg,.jpeg" hidden>
+      </div>
+      <p class="muted tiny">Or drag & drop <b>GLB · GLTF · OBJ · FBX · STL · IFC</b> into 3D view.</p>
+      <div class="field-row">
+        <label for="unit-select">Model unit</label>
+        <select id="unit-select">
+          <option value="1">meters (m)</option>
+          <option value="0.01">centimeters (cm)</option>
+          <option value="0.001">millimeters (mm)</option>
+          <option value="0.0254">inches (in)</option>
+        </select>
+      </div>
+      <div id="model-info" class="muted tiny">No model loaded.</div>
+    </section>
+
+    <section class="card compact" id="card-layers">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span><span class="dot blue"></span>Layers &amp; Groups <span id="layer-count" class="count">0</span></span>
+        <button id="btn-toggle-layers-collapse" class="mini-btn" type="button" title="Collapse or expand layers">▾</button>
+      </div>
+      <div id="layers-tree-wrap">
+        <ul id="layers-list" class="layers-list" aria-label="Layers and groups list"></ul>
+      </div>
+    </section>
+
+    <section class="card grow">
+      <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+        <span><span class="dot amber"></span>Elements <span id="element-count" class="count">0</span></span>
+        <span class="multi-actions">
+          <button id="btn-select-all" class="mini-btn" type="button" title="Select all visible elements">All</button>
+          <button id="btn-select-inv" class="mini-btn" type="button" title="Invert selection">Inv</button>
+          <button id="btn-select-none" class="mini-btn" type="button" title="Deselect all">None</button>
+        </span>
+      </div>
+      <input id="element-filter" class="search" type="search" placeholder="Filter elements…" autocomplete="off">
+      <ul id="element-list" class="element-list" role="listbox" aria-label="Éléments du modèle"></ul>
+    </section>
+
+    <section class="card compact">
+      <div class="card-title"><span class="dot green"></span>Help & Selection</div>
+      <ul class="help">
+        <li><b>Click</b> to select · <b>Shift+Click</b> / <b>Ctrl+Click</b> for multi-selection</li>
+        <li><b>Drag</b> to orbit · <b>Right-click</b> to pan · <b>Scroll</b> to zoom</li>
+        <li><b>F</b> focus · <b>H</b> thermal heatmap · <b>R</b> toggle roof</li>
+      </ul>
+    </section>
+  </aside>
+
+  <!-- ============================ VUE 3D ============================ -->
+  <main id="viewport-wrap">
+    <div id="viewport"></div>
+
+    <div id="toolbar" class="toolbar" role="toolbar" aria-label="Outils de vue">
+      <button id="tb-heatmap" class="tool thermal-only" type="button" title="3D Thermal Heatmap (H)">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 3c3 4 6 6 6 10a6 6 0 0 1-12 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-6 2-9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Thermal Heatmap</span>
+      </button>
+      <button id="tb-ghost" class="tool structure-only" type="button" title="Isolate structural elements">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M5 20V10a7 7 0 0 1 14 0v10l-3-2-2 2-2-2-2 2-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Isolate Structure</span>
+      </button>
+      <button id="tb-roof" class="tool" type="button" title="Toggle roof visibility (R)">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 13l9-8 9 8M6 11v9h12v-9" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Roof</span>
+      </button>
+      <button id="tb-edges" class="tool" type="button" title="Edges">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 8l8-4 8 4v8l-8 4-8-4zM4 8l8 4 8-4M12 12v8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span>Edges</span>
+      </button>
+      <button id="tb-marquee" class="tool" type="button" title="3D Marquee Selection (Shift+Drag or click to toggle)">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Marquee 3D</span>
+      </button>
+      <button id="tb-grid" class="tool active" type="button" title="Grid">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 4h16v16H4zM4 9.3h16M4 14.7h16M9.3 4v16M14.7 4v16" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Grid</span>
+      </button>
+      <span class="sep"></span>
+      <button id="tb-fit" class="tool icon" type="button" title="Cadrer le modèle (F)" aria-label="Cadrer">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="tool txt" type="button" data-view="iso" title="Vue isométrique">ISO</button>
+      <button class="tool txt" type="button" data-view="face" title="Front view">FRONT</button>
+      <button class="tool txt" type="button" data-view="droite" title="Right view">RIGHT</button>
+      <button class="tool txt" type="button" data-view="dessus" title="Top view">TOP</button>
+    </div>
+
+    <div id="legend" class="legend" hidden>
+      <div id="legend-title" class="legend-title"></div>
+      <div id="legend-bar" class="legend-bar"></div>
+      <div id="legend-ticks" class="legend-ticks"></div>
+    </div>
+
+    <div id="sel-chip" class="sel-chip" hidden>
+      <span class="chip-dot"></span><span id="sel-chip-name"></span>
+    </div>
+    <div id="hover-tip" class="hover-tip" hidden></div>
+
+    <div id="empty-state" class="empty-state">
+      <div class="empty-card">
+        <img src="icon.svg" alt="" width="84" height="84">
+        <h2>Import a 3D Model</h2>
+        <p>Drag & drop a <b>GLB · GLTF · OBJ · FBX · STL · IFC</b> file<br>or load the demonstration architecture model.</p>
+        <div class="empty-actions">
+          <button id="empty-test" class="btn accent big" type="button">Generate Demo Model</button>
+          <button id="empty-import" class="btn big" type="button">Import 3D File</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="drop-overlay" class="drop-overlay" hidden>
+      <div>Drop 3D model here</div>
+    </div>
+    <div id="busy" class="busy" hidden><div class="spinner"></div><span id="busy-text">Computing…</span></div>
+  </main>
+
+  <!-- ============================ PANNEAU DROIT ============================ -->
+  <aside id="sidebar-right" aria-label="Calculs">
+
+    <!-- Élément sélectionné (commun) -->
+    <section class="card" id="card-selection">
+      <div class="card-title"><span class="dot amber"></span>Selected Element</div>
+      <div id="sel-empty" class="empty-note">Click on an element in the 3D model or list to inspect and analyze it.</div>
+      <div id="sel-body" hidden>
+        <div class="sel-name" id="sel-name">—</div>
+        <div class="dims">
+          <div class="dim"><label>Length</label><output id="d-length">—</output><i>m</i></div>
+          <div class="dim"><label>Width</label><output id="d-width">—</output><i>m</i></div>
+          <div class="dim"><label>Thickness</label><output id="d-thick">—</output><i>m</i></div>
+          <div class="dim"><label>Area</label><output id="d-area">—</output><i>m²</i></div>
+          <div class="dim"><label>Volume</label><output id="d-volume">—</output><i>m³</i></div>
+          <div class="dim"><label>Developed S.</label><output id="d-surf">—</output><i>m²</i></div>
+        </div>
+        <p id="d-note" class="muted tiny"></p>
+      </div>
+    </section>
+
+    <!-- ===================== MODULE 1 : THERMIQUE ===================== -->
+    <div id="panel-thermal" class="panel">
+      <section class="card" id="card-wall">
+        <div class="card-title"><span class="dot blue"></span>Envelope Assembly <small>ISO 6946</small></div>
+        <div id="wall-disabled" class="empty-note">Select an element to assign its thermal envelope assembly.</div>
+        <div id="wall-body" hidden>
+          <div class="field-row">
+            <label for="role-select">Role</label>
+            <select id="role-select">
+              <option value="none">Unassigned (internal / non-envelope)</option>
+              <option value="mur">Exterior Wall</option>
+              <option value="toit">Roofing</option>
+              <option value="plancher">Ground Floor Slab</option>
+              <option value="vitrage">Glazed Window / Opening</option>
+            </select>
+          </div>
+
+          <div id="layers-block">
+            <div class="sub-title">Layers Composition <small>(interior → exterior)</small></div>
+            <div class="layer-row" data-i="0">
+              <span class="layer-idx">1</span>
+              <select id="layer-mat-0" aria-label="Matériau couche 1"></select>
+              <div class="num-unit"><input id="layer-e-0" type="number" min="0" step="0.5" inputmode="decimal" aria-label="Épaisseur couche 1"><i>cm</i></div>
+            </div>
+            <div class="layer-row" data-i="1">
+              <span class="layer-idx">2</span>
+              <select id="layer-mat-1" aria-label="Matériau couche 2"></select>
+              <div class="num-unit"><input id="layer-e-1" type="number" min="0" step="0.5" inputmode="decimal" aria-label="Épaisseur couche 2"><i>cm</i></div>
+            </div>
+            <div class="layer-row" data-i="2">
+              <span class="layer-idx">3</span>
+              <select id="layer-mat-2" aria-label="Matériau couche 3"></select>
+              <div class="num-unit"><input id="layer-e-2" type="number" min="0" step="0.5" inputmode="decimal" aria-label="Épaisseur couche 3"><i>cm</i></div>
+            </div>
+            <div id="layer-bar" class="layer-bar" aria-hidden="true"></div>
+            <p id="layer-note" class="muted tiny"></p>
+
+            <div class="two-col">
+              <div class="field">
+                <label for="area-input">Effective Area</label>
+                <div class="num-unit"><input id="area-input" type="number" min="0" step="0.01" inputmode="decimal"><i>m²</i></div>
+                <button id="btn-area-auto" class="link" type="button">↺ auto (L × W)</button>
+              </div>
+              <div class="field">
+                <label for="btr-input" title="Loss adjustment factor (ground, unheated space...)">Coef. b<sub>tr</sub></label>
+                <div class="num-unit"><input id="btr-input" type="number" min="0" max="1" step="0.05" inputmode="decimal"><i>–</i></div>
+              </div>
+            </div>
+            <button id="btn-apply-role" class="btn small wide" type="button">Apply this composition to all « <span id="apply-role-name">…</span> » elements</button>
+          </div>
+
+          <div id="wall-results" class="results" hidden>
+            <div class="res big"><label>Thermal Resistance R<sub>T</sub></label><output id="r-R">—</output><i>m²·K/W</i></div>
+            <div class="res big"><label>Transmittance U = 1/R<sub>T</sub></label><output id="r-U">—</output><i>W/m²·K</i><span id="u-rating" class="badge"></span></div>
+            <div class="res"><label>Thermal Phase Shift φ</label><output id="r-phase">—</output><i>h</i><span id="phase-rating" class="badge"></span></div>
+            <div class="res"><label>Decrement Factor exp(−Σe/δ)</label><output id="r-att">—</output><i>–</i></div>
+            <div class="res"><label>Penetration Velocity</label><output id="r-speed">—</output><i>cm/h</i></div>
+            <div class="res"><label>R<sub>si</sub> + R<sub>se</sub></label><output id="r-surf">—</output><i>m²·K/W</i></div>
+            <table class="mini-table" id="layers-table">
+              <thead><tr><th>Layer</th><th>d (cm)</th><th>R</th><th>D (10⁻⁷ m²/s)</th><th>δ (cm)</th><th>φ (h)</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="card-balance">
+        <div class="card-title"><span class="dot amber"></span>Global Thermal Balance <small>ISO 13790</small></div>
+
+        <div class="two-col">
+          <div class="field">
+            <label for="room-V">Air Volume V</label>
+            <div class="num-unit"><input id="room-V" type="number" min="1" step="0.1" inputmode="decimal"><i>m³</i></div>
+          </div>
+          <div class="field">
+            <label for="room-S">Usable Floor Area S</label>
+            <div class="num-unit"><input id="room-S" type="number" min="1" step="0.1" inputmode="decimal"><i>m²</i></div>
+          </div>
+        </div>
+        <button id="btn-detect-room" class="link" type="button">⟳ Auto-detect volume from 3D model</button>
+        <p id="room-note" class="muted tiny"></p>
+
+        <div class="slider">
+          <div class="slider-head"><label for="sl-text">Exterior Temp T<sub>e</sub></label><output id="v-text">−5.0 °C</output></div>
+          <input id="sl-text" type="range" min="-10" max="40" step="0.5" value="-5">
+        </div>
+        <div class="slider">
+          <div class="slider-head"><label for="sl-tint">Interior Setpoint T<sub>i</sub></label><output id="v-tint">20.0 °C</output></div>
+          <input id="sl-tint" type="range" min="18" max="26" step="0.5" value="20">
+        </div>
+        <div class="slider">
+          <div class="slider-head"><label for="sl-vmc">Air Exchange Rate (HVAC) n</label><output id="v-vmc">0.60 vol/h</output></div>
+          <input id="sl-vmc" type="range" min="0" max="3" step="0.05" value="0.6">
+        </div>
+        <div class="field-row">
+          <label for="in-dju" title="Degree days (base 18°C) for annual energy estimate">HDD (base 18°C) <small>°C·d/yr</small></label>
+          <div class="num-unit short"><input id="in-dju" type="number" min="0" step="50" value="2500" inputmode="numeric"><i>°C·j</i></div>
+        </div>
+
+        <div id="balance-results" class="results">
+          <div class="res"><label>H<sub>T</sub> = Σ b·U·A</label><output id="o-HT">—</output><i>W/K</i></div>
+          <div class="res"><label>H<sub>V</sub> = 0,34·V·n</label><output id="o-HV">—</output><i>W/K</i></div>
+          <div class="res"><label>H<sub>tot</sub> = H<sub>T</sub> + H<sub>V</sub></label><output id="o-H">—</output><i>W/K</i></div>
+          <div class="res hero" id="o-phi-box">
+            <label id="o-mode-label">Required Heating Power</label>
+            <output id="o-phi">—</output><i>W</i>
+            <span id="o-mode" class="badge"></span>
+          </div>
+          <div class="res"><label>Specific Power</label><output id="o-wm2">—</output><i>W/m²</i></div>
+          <div class="res"><label>Annual Demand (estimate)</label><output id="o-kwh">—</output><i>kWh/an</i></div>
+        </div>
+
+        <div class="sub-title">Heat Loss Breakdown</div>
+        <div id="loss-bar" class="loss-bar"></div>
+        <div id="loss-legend" class="loss-legend"></div>
+        <table class="mini-table" id="loss-table">
+          <thead><tr><th>Element</th><th>A (m²)</th><th>U</th><th>b·U·A</th><th>%</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="balance-warning" class="warn-note" hidden></p>
+
+        <button id="btn-heatmap" class="btn wide" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 3c3 4 6 6 6 10a6 6 0 0 1-12 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3 0-6 2-9z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+          3D Thermal Heatmap Visualization
+        </button>
+      </section>
+    </div>
+
+    <!-- ===================== MODULE 2 : RDM ===================== -->
+    <div id="panel-structure" class="panel">
+      <section class="card" id="card-beam-dims">
+        <div class="card-title"><span class="dot blue"></span>Element Type &amp; Dimensions</div>
+        <div id="beam-disabled" class="empty-note">Click on a beam, joist or column to run structural Eurocodes verification.</div>
+        <div id="beam-body" hidden>
+          <div id="multi-selection-banner" class="multi-selection-banner" hidden>
+            <span class="multi-badge">Multi-Selection</span>
+            <span id="multi-count-label">2 éléments sélectionnés</span>
+            <button id="btn-apply-batch" class="mini-accent-btn" type="button" title="Apply all current settings to selection">⚡ Apply to All</button>
+          </div>
+          <div class="field-row" style="margin-bottom:10px;">
+            <label>Structural Role</label>
+            <div class="seg seg-roles" role="radiogroup" aria-label="Rôle structural">
+              <label><input type="radio" name="struct-type" id="type-beam" value="beam" checked><span>Poutre</span></label>
+              <label><input type="radio" name="struct-type" id="type-column" value="column"><span>Poteau</span></label>
+              <label><input type="radio" name="struct-type" id="type-slab" value="slab"><span>Plancher</span></label>
+              <label><input type="radio" name="struct-type" id="type-bearingwall" value="bearingwall"><span>Mur porteur</span></label>
+              <label><input type="radio" name="struct-type" id="type-partition" value="partition"><span>Cloison</span></label>
+              <label><input type="radio" name="struct-type" id="type-corbel" value="corbel"><span>Corbeau</span></label>
+            </div>
+          </div>
+          <div class="three-col">
+            <div class="field"><label for="in-L" id="lbl-dim-L">Span L</label><div class="num-unit"><input id="in-L" type="number" min="0.01" step="0.01" inputmode="decimal"><i>m</i></div></div>
+            <div class="field"><label for="in-b" id="lbl-dim-b">Width b</label><div class="num-unit"><input id="in-b" type="number" min="0.001" step="0.005" inputmode="decimal"><i>m</i></div></div>
+            <div class="field"><label for="in-h" id="lbl-dim-h">Depth h</label><div class="num-unit"><input id="in-h" type="number" min="0.001" step="0.005" inputmode="decimal"><i>m</i></div></div>
+          </div>
+          <div class="btn-row">
+            <button id="btn-dims-auto" class="link" type="button">↺ Dimensions from BoundingBox</button>
+            <button id="btn-swap-bh" class="link" type="button">⇄ Swap b / h</button>
+          </div>
+          <p id="dims-source" class="muted tiny"></p>
+        </div>
+      </section>
+
+      <section class="card" id="card-beam-mech" hidden>
+        <div class="card-title"><span class="dot amber"></span>Material &amp; Supports</div>
+        <div class="field-row"><label for="beam-mat">Structural Material</label><select id="beam-mat"></select></div>
+        <div class="mat-chips">
+          <span>E = <output id="m-E">—</output> GPa</span>
+          <span>σ<sub>adm</sub> = <output id="m-sig">—</output> MPa</span>
+          <span>ρ = <output id="m-rho">—</output> kg/m³</span>
+        </div>
+        <div class="field-row"><label for="beam-scheme" id="lbl-scheme">Support Scheme</label>
+          <select id="beam-scheme">
+            <option value="ss">Simply Supported Beam</option>
+            <option value="fix">Fixed-Fixed Beam</option>
+            <option value="cant">Cantilever Beam</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="card" id="card-beam-loads" hidden>
+        <div class="card-title"><span class="dot blue"></span>Applied Loads</div>
+        <div class="res inline"><label id="lbl-pp">Self-weight g = ρ·g·b·h</label><output id="o-pp">—</output><i id="unit-pp">kN/m</i></div>
+
+        <!-- Chargement poutre (flexion) -->
+        <div id="loads-beam-wrap">
+          <div class="seg" role="radiogroup" aria-label="Mode de saisie de la charge répartie">
+            <label><input type="radio" name="qmode" id="qmode-direct" value="direct"><span>Direct q (kN/m)</span></label>
+            <label><input type="radio" name="qmode" id="qmode-strip" value="strip"><span>Tributary strip × surface load</span></label>
+          </div>
+          <div id="q-direct" class="field">
+            <label for="in-q">Distributed Load q</label>
+            <div class="num-unit"><input id="in-q" type="number" min="0" step="0.1" inputmode="decimal"><i>kN/m</i></div>
+          </div>
+          <div id="q-strip" class="two-col">
+            <div class="field"><label for="in-strip">Tributary Strip Width</label><div class="num-unit"><input id="in-strip" type="number" min="0" step="0.05" inputmode="decimal"><i>m</i></div></div>
+            <div class="field"><label for="in-surf">Surface Load</label><div class="num-unit"><input id="in-surf" type="number" min="0" step="10" inputmode="decimal"><i>kg/m²</i></div></div>
+          </div>
+          <div class="res inline"><label>Applied q (excluding self-weight)</label><output id="o-q">—</output><i>kN/m</i></div>
+
+          <div class="field">
+            <label for="in-F" id="lbl-F">Point Load F (midspan)</label>
+            <div class="num-unit"><input id="in-F" type="number" min="0" step="0.5" inputmode="decimal"><i>kN</i></div>
+          </div>
+        </div>
+
+        <!-- Chargement poteau (compression axiale / flambement) -->
+        <div id="loads-column-wrap" hidden>
+          <div class="two-col">
+            <div class="field">
+              <label for="in-N">Axial Load N (compression)</label>
+              <div class="num-unit"><input id="in-N" type="number" min="0" step="5" value="150" inputmode="decimal"><i>kN</i></div>
+            </div>
+            <div class="field">
+              <label for="in-e0" title="Accidental or intentional eccentricity (default max(H/400, 2 cm))">Eccentricity e<sub>0</sub></label>
+              <div class="num-unit"><input id="in-e0" type="number" min="0" step="0.5" value="2.0" inputmode="decimal"><i>cm</i></div>
+            </div>
+          </div>
+          <div class="field" style="margin-top:8px;">
+            <label for="in-M">Head Bending Moment M</label>
+            <div class="num-unit"><input id="in-M" type="number" min="0" step="1" value="0" inputmode="decimal"><i>kN·m</i></div>
+          </div>
+        </div>
+
+        <!-- Chargement plancher / dalle -->
+        <div id="loads-slab-wrap" hidden>
+          <div class="two-col">
+            <div class="field">
+              <label for="in-slab-q">Live Load Q (exploitation)</label>
+              <div class="num-unit"><input id="in-slab-q" type="number" min="0" step="0.5" value="2.5" inputmode="decimal"><i>kN/m²</i></div>
+            </div>
+            <div class="field">
+              <label for="in-slab-g">Dead Load G<sub>add</sub> (finishing)</label>
+              <div class="num-unit"><input id="in-slab-g" type="number" min="0" step="0.2" value="1.2" inputmode="decimal"><i>kN/m²</i></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chargement mur porteur -->
+        <div id="loads-bearingwall-wrap" hidden>
+          <div class="field">
+            <label for="in-wall-n">Linear Vertical Load n (at top)</label>
+            <div class="num-unit"><input id="in-wall-n" type="number" min="0" step="10" value="120" inputmode="decimal"><i>kN/m</i></div>
+          </div>
+        </div>
+
+        <!-- Chargement cloison -->
+        <div id="loads-partition-wrap" hidden>
+          <div class="field">
+            <label for="in-part-qh">Horizontal Push Load q<sub>h</sub> (DTU)</label>
+            <div class="num-unit"><input id="in-part-qh" type="number" min="0.1" step="0.05" value="0.40" inputmode="decimal"><i>kN/m²</i></div>
+          </div>
+        </div>
+
+        <!-- Chargement corbeau -->
+        <div id="loads-corbel-wrap" hidden>
+          <div class="field">
+            <label for="in-corb-F">Vertical Beam Reaction F</label>
+            <div class="num-unit"><input id="in-corb-F" type="number" min="0" step="5" value="120" inputmode="decimal"><i>kN</i></div>
+          </div>
+        </div>
+
+        <div class="field-row" style="margin-top:10px;">
+          <label for="sel-nature">Load Nature</label>
+          <select id="sel-nature"><option value="Q">Variable / Live (γ=1.5)</option><option value="G">Permanent / Dead (γ=1.35)</option></select>
+        </div>
+      </section>
+
+      <section class="card" id="card-beam-results" hidden>
+        <div class="card-title"><span class="dot green"></span>Results <small id="lbl-res-subtitle">Euler-Bernoulli · EN 1990</small></div>
+        <div id="verdict" class="verdict" data-state="none">
+          <div id="verdict-badge" class="verdict-badge">—</div>
+          <div id="verdict-cause" class="verdict-cause"></div>
+        </div>
+
+        <div class="gauges">
+          <div class="gauge">
+            <div class="gauge-head"><label id="lbl-gauge-1">Stress Utilization σ/σ<sub>adm</sub> (ULS)</label><output id="g-eta">—</output></div>
+            <div class="gauge-track"><div id="g-eta-bar" class="gauge-fill"></div><i class="mark" style="left:90%"></i></div>
+          </div>
+          <div class="gauge">
+            <div class="gauge-head"><label id="lbl-gauge-2">Deflection f<sub>max</sub> / L/300</label><output id="g-f">—</output></div>
+            <div class="gauge-track"><div id="g-f-bar" class="gauge-fill"></div><i class="mark" id="g-f-mark500"></i></div>
+          </div>
+        </div>
+
+        <!-- Table résultats poutre -->
+        <table class="result-table" id="table-beam-results">
+          <thead><tr><th>Beam Analysis</th><th>SLS</th><th>ULS</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Second Moment I<sub>z</sub> = b·h³/12</td><td colspan="2" id="t-Iz">—</td><td>cm⁴</td></tr>
+            <tr><td>Section Modulus W = b·h²/6</td><td colspan="2" id="t-W">—</td><td>cm³</td></tr>
+            <tr><td>Bending Moment M<sub>max</sub></td><td id="t-M-els">—</td><td id="t-M-elu" class="strong">—</td><td>kN·m</td></tr>
+            <tr><td>Shear Force V<sub>max</sub></td><td id="t-V-els">—</td><td id="t-V-elu" class="strong">—</td><td>kN</td></tr>
+            <tr><td>Bending Stress σ<sub>max</sub></td><td id="t-s-els">—</td><td id="t-s-elu" class="strong">—</td><td>MPa</td></tr>
+            <tr><td>Allowable σ<sub>adm</sub></td><td colspan="2" id="t-sadm">—</td><td>MPa</td></tr>
+            <tr class="hl"><td>Deflection f<sub>max</sub></td><td colspan="2" id="t-f" class="strong">—</td><td>mm</td></tr>
+            <tr><td>L/f<sub>max</sub> <small id="t-lref"></small></td><td colspan="2" id="t-ratio">—</td><td>–</td></tr>
+            <tr><td>Threshold L/300</td><td colspan="2" id="t-l300">—</td><td>mm</td></tr>
+            <tr><td>Threshold L/500</td><td colspan="2" id="t-l500">—</td><td>mm</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Table résultats poteau (flambement) -->
+        <table class="result-table" id="table-column-results" hidden>
+          <thead><tr><th>Column Buckling (Euler · EC)</th><th>SLS</th><th>ULS</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Section Area A = b·h</td><td colspan="2" id="tc-A">—</td><td>cm²</td></tr>
+            <tr><td>Radius of gyration i<sub>min</sub> = b/√12</td><td colspan="2" id="tc-imin">—</td><td>cm</td></tr>
+            <tr><td>Weak axis inertia I<sub>min</sub></td><td colspan="2" id="tc-Imin">—</td><td>cm⁴</td></tr>
+            <tr class="hl"><td>Euler critical load N<sub>cr</sub> = π²EI/L<sub>cr</sub>²</td><td colspan="2" id="tc-Ncr" class="strong">—</td><td>kN</td></tr>
+            <tr><td>Buckling length L<sub>cr</sub> = k·H</td><td colspan="2" id="tc-Lcr">—</td><td>m</td></tr>
+            <tr><td>Geometric slenderness λ = L<sub>cr</sub>/i</td><td colspan="2" id="tc-lambda">—</td><td>–</td></tr>
+            <tr><td>Non-dim. slenderness λ̄ = λ/λ<sub>1</sub></td><td colspan="2" id="tc-lambdabar">—</td><td>–</td></tr>
+            <tr><td>Reduction factor χ (Eurocode)</td><td colspan="2" id="tc-chi">—</td><td>–</td></tr>
+            <tr class="hl"><td>Buckling resistance N<sub>b,Rd</sub></td><td colspan="2" id="tc-NbRd" class="strong">—</td><td>kN</td></tr>
+            <tr><td>Design axial load N<sub>Ed</sub> (ULS)</td><td colspan="2" id="tc-Nelu" class="strong">—</td><td>kN</td></tr>
+            <tr><td>Axial stress σ<sub>N</sub> = N/A</td><td colspan="2" id="tc-sigmaN">—</td><td>MPa</td></tr>
+            <tr><td>Bending stress σ<sub>M</sub> (e<sub>0</sub>)</td><td colspan="2" id="tc-sigmaM">—</td><td>MPa</td></tr>
+            <tr class="hl"><td>Combined stress σ<sub>max</sub></td><td colspan="2" id="tc-sigmatot" class="strong">—</td><td>MPa</td></tr>
+            <tr><td>Allowable stress σ<sub>adm</sub></td><td colspan="2" id="tc-sadm">—</td><td>MPa</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Table résultats plancher / dalle -->
+        <table class="result-table" id="table-slab-results" hidden>
+          <thead><tr><th>Slab &amp; Floor Analysis</th><th>SLS</th><th>ULS</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Slab Dimensions Lx × Ly</td><td colspan="2" id="ts-dims">—</td><td>m</td></tr>
+            <tr><td>Slab Thickness e</td><td colspan="2" id="ts-e">—</td><td>cm</td></tr>
+            <tr><td>Total Dead Load G = pp + g_add</td><td colspan="2" id="ts-Gtot">—</td><td>kN/m²</td></tr>
+            <tr><td>Design Load q_Ed (ULS)</td><td colspan="2" id="ts-qelu" class="strong">—</td><td>kN/m²</td></tr>
+            <tr class="hl"><td>Max Bending Moment M_Ed,x</td><td id="ts-Mels">—</td><td id="ts-Melu" class="strong">—</td><td>kN·m/m</td></tr>
+            <tr><td>Max Shear Force V_Ed</td><td colspan="2" id="ts-Velu">—</td><td>kN/m</td></tr>
+            <tr><td>Bending Stress σ_max</td><td id="ts-sels">—</td><td id="ts-selu" class="strong">—</td><td>MPa</td></tr>
+            <tr><td>Allowable Stress σ<sub>adm</sub></td><td colspan="2" id="ts-sadm">—</td><td>MPa</td></tr>
+            <tr class="hl"><td>Max Deflection f<sub>max</sub> (SLS)</td><td colspan="2" id="ts-f" class="strong">—</td><td>mm</td></tr>
+            <tr><td>Deflection Limit L/350</td><td colspan="2" id="ts-lim350">—</td><td>mm</td></tr>
+            <tr><td>Comfort Limit L/500</td><td colspan="2" id="ts-lim500">—</td><td>mm</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Table résultats mur porteur -->
+        <table class="result-table" id="table-bearingwall-results" hidden>
+          <thead><tr><th>Bearing Wall (EC2 · EC6)</th><th>SLS</th><th>ULS</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Wall Geometry H × t</td><td colspan="2" id="tw-geom">—</td><td>m</td></tr>
+            <tr><td>Self-weight per meter</td><td colspan="2" id="tw-pp">—</td><td>kN/m</td></tr>
+            <tr class="hl"><td>Total Design Load n_Ed (ULS)</td><td id="tw-nels">—</td><td id="tw-nelu" class="strong">—</td><td>kN/m</td></tr>
+            <tr><td>Slenderness λ = H / (t/√12)</td><td colspan="2" id="tw-lambda">—</td><td>–</td></tr>
+            <tr><td>Total Eccentricity e_i</td><td colspan="2" id="tw-ei">—</td><td>cm</td></tr>
+            <tr><td>Buckling Reduction Factor Φ</td><td colspan="2" id="tw-phi">—</td><td>–</td></tr>
+            <tr class="hl"><td>Ultimate Capacity n_Rd</td><td colspan="2" id="tw-nrd" class="strong">—</td><td>kN/m</td></tr>
+            <tr><td>Average Compressive Stress σ</td><td colspan="2" id="tw-sigma">—</td><td>MPa</td></tr>
+            <tr><td>Allowable Stress σ<sub>adm</sub></td><td colspan="2" id="tw-sadm">—</td><td>MPa</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Table résultats cloison -->
+        <table class="result-table" id="table-partition-results" hidden>
+          <thead><tr><th>Partition Wall (NF DTU 25.41)</th><th>Value</th><th>Limit</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Dimensions H × t</td><td colspan="2" id="tp-geom">—</td><td>m</td></tr>
+            <tr><td>Linear Weight on Floor</td><td colspan="2" id="tp-wlin">—</td><td>kN/m</td></tr>
+            <tr><td>Surface Mass</td><td colspan="2" id="tp-wsurf">—</td><td>kg/m²</td></tr>
+            <tr><td>Horizontal Push Load q_h</td><td colspan="2" id="tp-qh">—</td><td>kN/m²</td></tr>
+            <tr class="hl"><td>Transverse Deflection f_h</td><td id="tp-fh" class="strong">—</td><td id="tp-lim200">—</td><td>mm (H/200)</td></tr>
+            <tr><td>Bending Stress σ_h</td><td id="tp-sigma">—</td><td id="tp-sadm">—</td><td>MPa</td></tr>
+            <tr class="hl"><td>Serviceability Status</td><td colspan="2" id="tp-status" class="strong">—</td><td>–</td></tr>
+          </tbody>
+        </table>
+
+        <!-- Table résultats corbeau -->
+        <table class="result-table" id="table-corbel-results" hidden>
+          <thead><tr><th>Corbel (Strut &amp; Tie · EC2)</th><th>SLS</th><th>ULS</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Projection a_c / Depth h_c</td><td colspan="2" id="tcb-geom">—</td><td>cm</td></tr>
+            <tr><td>Short Corbel Ratio a_c / d</td><td colspan="2" id="tcb-rac">—</td><td>–</td></tr>
+            <tr><td>Applied Vertical Load F_Ed</td><td id="tcb-fels">—</td><td id="tcb-fedu" class="strong">—</td><td>kN</td></tr>
+            <tr><td>Horizontal Load H_Ed (0.2 F)</td><td colspan="2" id="tcb-hed">—</td><td>kN</td></tr>
+            <tr><td>Strut Angle θ</td><td colspan="2" id="tcb-theta">—</td><td>deg</td></tr>
+            <tr class="hl"><td>Tie Tension Force T_Ed</td><td colspan="2" id="tcb-ted" class="strong">—</td><td>kN</td></tr>
+            <tr class="hl"><td>Required Rebar Area A_s</td><td colspan="2" id="tcb-as" class="strong">—</td><td>cm²</td></tr>
+            <tr><td>Strut Compressive Stress σ_c</td><td colspan="2" id="tcb-sigmastrut">—</td><td>MPa</td></tr>
+            <tr><td>Joint Shear Stress τ_Ed</td><td colspan="2" id="tcb-tau">—</td><td>MPa</td></tr>
+            <tr><td>Allowable Shear τ_adm</td><td colspan="2" id="tcb-tauadm">—</td><td>MPa</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="card" id="card-beam-chart" hidden>
+        <div class="card-title"><span class="dot amber"></span>Deflection &amp; Bending Moment Diagram</div>
+        <canvas id="beam-canvas" aria-label="Déformée amplifiée et diagramme du moment fléchissant"></canvas>
+      </section>
+    </div>
+  </aside>
+
+  <!-- ============================ BARRE D'ÉTAT ============================ -->
+  <footer id="statusbar">
+    <span id="status-text">Ready.</span>
+    <span class="spacer"></span>
+    <span id="status-hover" class="muted"></span>
+    <span class="chip">ISO 6946 · ISO 13790 · EN 1990 · Euler-Bernoulli</span>
+  </footer>
+</div>
+
+<!-- ============================ MODALE MATÉRIAUX ============================ -->
+<div id="materials-modal" class="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="materials-title">
+    <div class="modal-head">
+      <h2 id="materials-title">Material Engineering Database</h2>
+      <span class="muted tiny">λ thermal conductivity · ρ density · c<sub>p</sub> specific heat · E Young's modulus · σ<sub>adm</sub> allowable bending stress</span>
+      <button id="materials-close" class="icon-btn" type="button" aria-label="Fermer">✕</button>
+    </div>
+    <div class="modal-body">
+      <table id="materials-table" class="mat-table">
+        <thead>
+          <tr>
+            <th>Material</th><th>Category</th>
+            <th>λ<small>W/m·K</small></th><th>ρ<small>kg/m³</small></th><th>c<sub>p</sub><small>J/kg·K</small></th>
+            <th>E<small>GPa</small></th><th>σ<sub>adm</sub><small>MPa</small></th><th>U<sub>g</sub><small>W/m²K</small></th><th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="modal-foot">
+      <button id="mat-add" class="btn accent small" type="button">＋ Add Material</button>
+      <button id="mat-import" class="btn small" type="button">Import JSON</button>
+      <button id="mat-export" class="btn small" type="button">Export JSON</button>
+      <input id="mat-import-input" type="file" accept=".json,application/json" hidden>
+      <span class="spacer"></span>
+      <button id="mat-reset" class="btn small danger" type="button">Reset</button>
+      <button id="mat-done" class="btn primary small" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-host" class="toast-host" aria-live="polite"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
