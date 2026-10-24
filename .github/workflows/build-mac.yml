@@ -21,7 +21,7 @@ jobs:
         run: npm ci || npm install
 
       - name: Compiler pour macOS
-        run: npx electron-builder --mac
+        run: npx electron-builder --mac --publish never
         env:
           # Désactive l'exigence de signature payante d'Apple lors de la compilation
           CSC_IDENTITY_AUTO_DISCOVERY: false
