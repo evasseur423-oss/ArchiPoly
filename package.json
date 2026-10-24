@@ -36,10 +36,11 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.archipoly.app",
-    "productName": "ArchiPoly",
-    "directories": {
-      "output": "dist"
+    "appId": "com.archipoly.studio",
+  "productName": "ArchiPoly Studio",
+  "mac": {
+    "target": ["dmg", "zip"],
+    "category": "public.app-category.graphics-design"
     },
     "win": {
       "target": [
